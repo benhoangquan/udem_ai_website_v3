@@ -1,0 +1,117 @@
+---
+import '../styles/tui.css';
+import { ui, SECTION_KEYS, type Locale } from '../i18n/ui';
+import CliTerminal from '../components/CliTerminal.astro';
+
+interface Props {
+  lang: Locale;
+  title?: string;
+  description?: string;
+  currentPath?: string;
+  langSwitchHref?: string;
+}
+
+const {
+  lang,
+  title,
+  description,
+  currentPath = '~',
+  langSwitchHref,
+} = Astro.props;
+
+const t = ui[lang];
+const prefix = lang === 'fr' ? '/fr' : '';
+const pageTitle = title ? `${title} | UdeM AI` : t.siteTitle;
+const pageDesc = description || t.siteDescription;
+const switchHref = langSwitchHref || t.topBar.langSwitchHref;
+const activeSection = currentPath.replace(/^~\/?/, '');
+---
+
+<!DOCTYPE html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDesc} />
+  </head>
+  <body>
+    <div class="layout-container">
+      <header class="tui-statusbar">
+        <div class="tui-statusbar-left">
+          <a href={lang === 'fr' ? '/fr' : '/'} class="tui-host-badge">
+            [{t.topBar.host} {currentPath}]
+          </a>
+          <nav class="tui-top-nav" aria-label="Section navigation">
+            <a
+              href={lang === 'fr' ? '/fr' : '/'}
+              class:list={['tui-top-nav-link', { active: currentPath === '~' }]}
+            >
+              ~
+            </a>
+            {
+              SECTION_KEYS.map((sec) => (
+                <a
+                  href={`${prefix}/${sec}`}
+                  class:list={[
+                    'tui-top-nav-link',
+                    { active: activeSection === sec },
+                  ]}
+                >
+                  {sec}
+                </a>
+              ))
+            }
+          </nav>
+        </div>
+        <div class="tui-statusbar-right">
+          <a href="mailto:anas.el-ghoudane@umontreal.ca" class="tui-social-link">
+            {lang === 'fr' ? 'COURRIEL' : 'EMAIL'}
+          </a>
+          <a
+            href="https://instagram.com/udem.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tui-social-link"
+          >
+            IG
+          </a>
+          <a
+            href="https://discord.gg/2Ttnw8p2Hy"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tui-social-link"
+          >
+            DISCORD
+          </a>
+          <a
+            href="https://www.linkedin.com/company/udem-ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tui-social-link"
+          >
+            LINKEDIN
+          </a>
+          <a
+            href={switchHref}
+            class="tui-lang-btn"
+            title="Switch Language / Changer de langue"
+          >
+            [{lang.toUpperCase()} &rarr; {t.topBar.langSwitchLabel}]
+          </a>
+        </div>
+      </header>
+
+      <main class="layout-content">
+        <slot />
+      </main>
+    </div>
+
+    <CliTerminal
+      lang={lang}
+      currentPath={currentPath}
+      langSwitchHref={switchHref}
+    />
+  </body>
+</html>

@@ -1,0 +1,46 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ui } from '../../i18n/ui';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', (e) => e.data.lang === 'en');
+  return posts.map((post) => ({
+    params: { slug: post.data.slugId },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+const t = ui.en;
+---
+
+<BaseLayout
+  lang="en"
+  title={post.data.title}
+  description={post.data.summary}
+  currentPath={`/posts/${post.data.slugId}`}
+  langSwitchHref={`/fr/posts/${post.data.slugId}`}
+>
+  <div style="margin-bottom: 1rem;">
+    <a href="/">{t.posts.backHome}</a>
+  </div>
+
+  <fieldset class="system-box">
+    <legend class="system-box-title">── {post.data.title} ──</legend>
+    <div class="system-box-content">
+      <div class="tui-meta" style="margin-bottom: 0.75rem;">
+        <span class="tui-badge coral">{post.data.date}</span>
+        &nbsp;·&nbsp;<strong>{post.data.author}</strong>
+        {post.data.venue ? ` · 📍 ${post.data.venue}` : ''}
+      </div>
+      <div class="tui-tags" style="margin-bottom: 1.25rem;">
+        {post.data.tags.map((tag) => <span class="tui-tag">#{tag}</span>)}
+      </div>
+      <div class="tui-prose">
+        <Content />
+      </div>
+    </div>
+  </fieldset>
+</BaseLayout>

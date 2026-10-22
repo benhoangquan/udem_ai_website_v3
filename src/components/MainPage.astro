@@ -1,0 +1,181 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AsciiBanner from './AsciiBanner.astro';
+import { ui, type Locale } from '../i18n/ui';
+
+interface Props {
+  lang: Locale;
+}
+
+const { lang } = Astro.props;
+const t = ui[lang];
+const prefix = lang === 'fr' ? '/fr' : '';
+
+const allPosts = (
+  await getCollection('posts', (entry) => entry.data.lang === lang)
+).sort((a, b) => b.data.date.localeCompare(a.data.date));
+
+const renderedPosts = await Promise.all(
+  allPosts.map(async (post) => {
+    const { Content } = await post.render();
+    return { post, Content };
+  })
+);
+---
+
+<BaseLayout
+  lang={lang}
+  currentPath="~"
+  langSwitchHref={lang === 'fr' ? '/' : '/fr'}
+>
+  <!-- QUARCC-style Two-Column TUI Hero Dashboard -->
+  <div class="home-container">
+    <div class="home-left">
+      <AsciiBanner
+        greeting={t.hero.greeting}
+        location={t.hero.location}
+        tagline={t.hero.tagline}
+      />
+
+      <!-- Posts / Meeting Notes directly in left hero column (QUARCC style) -->
+      <div id="posts" class="posts-section">
+        <div class="posts-intro">
+          <h2>── {t.posts.heading} ──</h2>
+          <p>{t.posts.subheading}</p>
+        </div>
+        <div class="news-list">
+          {
+            renderedPosts.map(({ post, Content }) => (
+              <div class="news-card">
+                <a
+                  href={`${prefix}/posts/${post.data.slugId}`}
+                  class="news-card-title"
+                >
+                  {post.data.title}
+                </a>
+                <div class="news-card-date">
+                  {post.data.date} · {post.data.author}
+                  {post.data.venue ? ` · 📍 ${post.data.venue}` : ''}
+                </div>
+                <p class="news-card-summary">{post.data.summary}</p>
+                <div class="tui-tags">
+                  {post.data.tags.map((tag) => (
+                    <span class="tui-tag">#{tag}</span>
+                  ))}
+                </div>
+                <div class="news-card-actions">
+                  <a href={`${prefix}/posts/${post.data.slugId}`}>
+                    {t.posts.readFull}
+                  </a>
+                </div>
+                <details class="tui-details">
+                  <summary>{t.posts.expandInline}</summary>
+                  <div class="tui-prose" style="margin-top: 0.75rem;">
+                    <Content />
+                  </div>
+                </details>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="home-right">
+      <!-- Club Details Box -->
+      <fieldset class="system-box">
+        <legend class="system-box-title">{t.clubDetails.boxTitle}</legend>
+        <div class="system-box-content">
+          <div class="detail-row">
+            <span class="label">{t.clubDetails.nameLabel}</span>
+            <span class="value">{t.clubDetails.nameValue}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.clubDetails.fullNameLabel}</span>
+            <span class="value">{t.clubDetails.fullNameValue}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.clubDetails.locationLabel}</span>
+            <span class="value">{t.clubDetails.locationValue}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.clubDetails.missionLabel}</span>
+            <span class="value">{t.clubDetails.missionValue}</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- System Navigation Box (links to each individual section page) -->
+      <fieldset class="system-box">
+        <legend class="system-box-title">{t.systemNav.boxTitle}</legend>
+        <div class="system-box-content">
+          <div class="nav-links-grid">
+            <a href={`${prefix}/about`} class="nav-link">
+              <span class="nav-key">about</span>
+              <span class="nav-desc">{t.systemNav.about}</span>
+            </a>
+            <a href={`${prefix}/events`} class="nav-link">
+              <span class="nav-key">events</span>
+              <span class="nav-desc">{t.systemNav.events}</span>
+            </a>
+            <a href={`${prefix}/papers`} class="nav-link">
+              <span class="nav-key">papers</span>
+              <span class="nav-desc">{t.systemNav.papers}</span>
+            </a>
+            <a href={`${prefix}/presentations`} class="nav-link">
+              <span class="nav-key">presentations</span>
+              <span class="nav-desc">{t.systemNav.presentations}</span>
+            </a>
+            <a href={`${prefix}/projects`} class="nav-link">
+              <span class="nav-key">projects</span>
+              <span class="nav-desc">{t.systemNav.projects}</span>
+            </a>
+            <a href={`${prefix}/teams`} class="nav-link">
+              <span class="nav-key">teams</span>
+              <span class="nav-desc">{t.systemNav.teams}</span>
+            </a>
+            <a href={`${prefix}/join`} class="nav-link">
+              <span class="nav-key">join</span>
+              <span class="nav-desc">{t.systemNav.join}</span>
+            </a>
+            <a href={`${prefix}/faq`} class="nav-link">
+              <span class="nav-key">faq</span>
+              <span class="nav-desc">{t.systemNav.faq}</span>
+            </a>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Project Status Box -->
+      <fieldset class="system-box">
+        <legend class="system-box-title">{t.projectStatus.boxTitle}</legend>
+        <div class="system-box-content">
+          <div class="detail-row">
+            <span class="label">{t.projectStatus.eventsLabel}</span>
+            <span class="value">{t.projectStatus.eventsValue}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.projectStatus.recruitmentLabel}</span>
+            <span class="value">{t.projectStatus.recruitmentValue}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.projectStatus.contactLabel}</span>
+            <a
+              href="mailto:anas.el-ghoudane@umontreal.ca"
+              class="value faq-link"
+            >
+              {t.projectStatus.contactValue}
+            </a>
+          </div>
+          <div class="detail-row">
+            <span class="label">{t.projectStatus.faqLabel}</span>
+            <a href={`${prefix}/faq`} class="value faq-link">
+              {t.projectStatus.faqValue}
+            </a>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,446 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ui, type Locale, type SectionKey } from '../i18n/ui';
+
+interface Props {
+  lang: Locale;
+  section: SectionKey;
+}
+
+const { lang, section } = Astro.props;
+const t = ui[lang];
+const prefix = lang === 'fr' ? '/fr' : '';
+const langSwitchHref = lang === 'fr' ? `/${section}` : `/fr/${section}`;
+
+const sectionTitles: Record<SectionKey, string> = {
+  about: t.sections.aboutBox,
+  events: t.sections.eventsBox,
+  papers: t.sections.papersBox,
+  presentations: t.sections.presentationsBox,
+  projects: t.sections.projectsBox,
+  teams: t.sections.teamsBox,
+  join: t.sections.joinBox,
+  faq: t.sections.faqBox,
+};
+
+// Load data needed for the requested section
+const allMembers =
+  section === 'teams'
+    ? (await getCollection('members')).sort(
+        (a, b) => a.data.order - b.data.order
+      )
+    : [];
+const executives = allMembers.filter((m) => m.data.role === 'executive');
+const advisors = allMembers.filter((m) => m.data.role === 'advisor');
+
+const allPapers =
+  section === 'papers'
+    ? (await getCollection('papers')).sort((a, b) =>
+        b.data.date.localeCompare(a.data.date)
+      )
+    : [];
+const featuredPaper = allPapers.find((p) => p.data.featured) || allPapers[0];
+const archivePapers = allPapers.filter((p) => p.id !== featuredPaper?.id);
+
+const allEvents =
+  section === 'events'
+    ? (await getCollection('events')).sort((a, b) =>
+        b.data.date.localeCompare(a.data.date)
+      )
+    : [];
+const upcomingEvents = allEvents.filter((e) => e.data.upcoming);
+const pastEvents = allEvents.filter((e) => !e.data.upcoming);
+
+const allPresentations =
+  section === 'presentations'
+    ? (await getCollection('presentations')).sort(
+        (a, b) => a.data.week - b.data.week
+      )
+    : [];
+
+let MarkdownContent: any = null;
+if (
+  section === 'about' ||
+  section === 'projects' ||
+  section === 'join' ||
+  section === 'faq'
+) {
+  const entries = await getCollection(
+    'sections',
+    (entry) => entry.data.lang === lang && entry.data.sectionId === section
+  );
+  if (entries[0]) {
+    const rendered = await entries[0].render();
+    MarkdownContent = rendered.Content;
+  }
+}
+---
+
+<BaseLayout
+  lang={lang}
+  title={t.systemNav[section]}
+  currentPath={`~/${section}`}
+  langSwitchHref={langSwitchHref}
+>
+  <div style="margin-bottom: 1rem;">
+    <a href={lang === 'fr' ? '/fr' : '/'} class="tui-lang-btn">
+      {t.posts.backHome}
+    </a>
+  </div>
+
+  {
+    section === 'about' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.about}</legend>
+        <div class="system-box-content tui-prose">
+          {MarkdownContent && <MarkdownContent />}
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'events' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.events}</legend>
+        <div class="system-box-content">
+          <div class="section-subdivider">{t.sections.upcomingHeading}</div>
+          <div class="tui-grid-2">
+            {upcomingEvents.map((ev) => (
+              <div class="tui-item-card featured">
+                <div>
+                  <span class="tui-badge green">
+                    {ev.data.date} | {ev.data.time}
+                  </span>
+                  <h3 style="margin: 0.45rem 0 0.25rem; color: var(--color-heading); font-size: 0.98rem;">
+                    {lang === 'fr' ? ev.data.title_fr : ev.data.title_en}
+                  </h3>
+                  <div class="tui-meta">
+                    📍{' '}
+                    {lang === 'fr' ? ev.data.location_fr : ev.data.location_en}
+                  </div>
+                  <p style="margin: 0.45rem 0 0; font-size: 0.86rem;">
+                    {lang === 'fr' ? ev.data.summary_fr : ev.data.summary_en}
+                  </p>
+                </div>
+                {ev.data.link && (
+                  <div style="margin-top: 0.4rem;">
+                    <a
+                      href={
+                        ev.data.link.startsWith('/posts')
+                          ? `${prefix}${ev.data.link}`
+                          : ev.data.link
+                      }
+                      target={
+                        ev.data.link.startsWith('http') ? '_blank' : undefined
+                      }
+                      rel={
+                        ev.data.link.startsWith('http')
+                          ? 'noopener noreferrer'
+                          : undefined
+                      }
+                    >
+                      &rarr;{' '}
+                      {ev.data.link.startsWith('http')
+                        ? 'Discord / Link ↗'
+                        : t.posts.readFull}
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div class="section-subdivider">{t.sections.pastHeading}</div>
+          <div class="tui-grid-2">
+            {pastEvents.map((ev) => (
+              <div class="tui-item-card">
+                <div>
+                  <span class="tui-badge blue">
+                    {ev.data.date} | {ev.data.time}
+                  </span>
+                  <h3 style="margin: 0.45rem 0 0.25rem; color: var(--color-heading); font-size: 0.95rem;">
+                    {lang === 'fr' ? ev.data.title_fr : ev.data.title_en}
+                  </h3>
+                  <div class="tui-meta">
+                    📍{' '}
+                    {lang === 'fr' ? ev.data.location_fr : ev.data.location_en}
+                  </div>
+                  <p style="margin: 0.45rem 0 0; font-size: 0.85rem;">
+                    {lang === 'fr' ? ev.data.summary_fr : ev.data.summary_en}
+                  </p>
+                </div>
+                {ev.data.link && (
+                  <div style="margin-top: 0.35rem;">
+                    <a
+                      href={ev.data.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {t.sections.openPdf}
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'papers' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.papers}</legend>
+        <div class="system-box-content">
+          {featuredPaper && (
+            <div class="tui-item-card featured" style="margin-bottom: 1rem;">
+              <div>
+                <span class="tui-badge coral">
+                  {t.sections.paperOfTheWeek} · {featuredPaper.data.date}
+                </span>
+                <h3 style="margin: 0.45rem 0 0.15rem; color: #fff; font-size: 1.04rem;">
+                  {featuredPaper.data.title}
+                </h3>
+                <div class="tui-meta">{featuredPaper.data.authors}</div>
+                <p style="margin: 0.45rem 0; font-size: 0.88rem;">
+                  {lang === 'fr'
+                    ? featuredPaper.data.summary_fr
+                    : featuredPaper.data.summary_en}
+                </p>
+                <div class="tui-tags">
+                  {featuredPaper.data.tags.map((tag) => (
+                    <span class="tui-tag">#{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <div style="margin-top: 0.5rem;">
+                <a
+                  href={featuredPaper.data.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {t.sections.readPaper}
+                </a>
+              </div>
+            </div>
+          )}
+
+          <div class="section-subdivider">{t.sections.previousPapers}</div>
+          <div class="tui-grid-2">
+            {archivePapers.map((paper) => (
+              <div class="tui-item-card">
+                <div>
+                  <span class="tui-badge blue">{paper.data.authors}</span>
+                  <h3 style="margin: 0.4rem 0 0.25rem; color: var(--color-heading); font-size: 0.94rem;">
+                    {paper.data.title}
+                  </h3>
+                  <p style="margin: 0.3rem 0; font-size: 0.84rem; color: var(--color-text-muted);">
+                    {lang === 'fr'
+                      ? paper.data.summary_fr
+                      : paper.data.summary_en}
+                  </p>
+                  <div class="tui-tags">
+                    {paper.data.tags.map((tag) => (
+                      <span class="tui-tag">#{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style="margin-top: 0.45rem;">
+                  <a
+                    href={paper.data.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    [PDF / arXiv ↗]
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'presentations' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.presentations}</legend>
+        <div class="system-box-content">
+          <div class="tui-grid-2">
+            {allPresentations.map((pres) => (
+              <div class="tui-item-card">
+                <div>
+                  <span class="tui-badge green">
+                    {lang === 'fr'
+                      ? pres.data.semester_fr
+                      : pres.data.semester_en}{' '}
+                    · {pres.data.date}
+                  </span>
+                  <h3 style="margin: 0.45rem 0 0.25rem; color: var(--color-heading); font-size: 0.96rem;">
+                    {lang === 'fr' ? pres.data.title_fr : pres.data.title_en}
+                  </h3>
+                  <p style="margin: 0.3rem 0; font-size: 0.85rem; color: var(--color-text-muted);">
+                    {lang === 'fr'
+                      ? pres.data.summary_fr
+                      : pres.data.summary_en}
+                  </p>
+                </div>
+                <div style="margin-top: 0.45rem;">
+                  <a
+                    href={pres.data.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t.sections.openPdf}
+                  </a>
+                  <details class="tui-details">
+                    <summary>{t.sections.previewPdf}</summary>
+                    <iframe
+                      src={pres.data.pdfUrl}
+                      style="width: 100%; height: 420px; border: 1px solid var(--color-border); margin-top: 0.5rem; background: #111;"
+                      title={
+                        lang === 'fr' ? pres.data.title_fr : pres.data.title_en
+                      }
+                    />
+                  </details>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'projects' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.projects}</legend>
+        <div class="system-box-content tui-prose">
+          {MarkdownContent && <MarkdownContent />}
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'teams' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.teams}</legend>
+        <div class="system-box-content">
+          <div class="section-subdivider">{t.sections.executiveHeading}</div>
+          <p class="tui-meta" style="margin: 0 0 0.65rem;">
+            {t.sections.executiveSub}
+          </p>
+          <div class="team-grid">
+            {executives.map((member) => (
+              <div class="team-card">
+                <div class="team-avatar-box">
+                  {member.data.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="team-info">
+                  <h3 class="team-name">{member.data.name}</h3>
+                  <div class="team-role">
+                    {lang === 'fr'
+                      ? member.data.position_fr
+                      : member.data.position_en}
+                  </div>
+                  <p class="team-bio">
+                    {lang === 'fr' ? member.data.bio_fr : member.data.bio_en}
+                  </p>
+                  <div class="team-links">
+                    {member.data.email && (
+                      <a href={`mailto:${member.data.email}`}>[Email]</a>
+                    )}
+                    {member.data.linkedin && (
+                      <a
+                        href={member.data.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        [LinkedIn]
+                      </a>
+                    )}
+                    {member.data.github && (
+                      <a
+                        href={member.data.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        [GitHub]
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div class="section-subdivider" style="margin-top: 1.25rem;">
+            {t.sections.advisorsHeading}
+          </div>
+          <p class="tui-meta" style="margin: 0 0 0.65rem;">
+            {t.sections.advisorsSub}
+          </p>
+          <div class="team-grid">
+            {advisors.map((member) => (
+              <div class="team-card">
+                <div class="team-avatar-box">
+                  {member.data.name.charAt(0).toUpperCase()}
+                </div>
+                <div class="team-info">
+                  <h3 class="team-name">{member.data.name}</h3>
+                  <div class="team-role">
+                    {lang === 'fr'
+                      ? member.data.position_fr
+                      : member.data.position_en}
+                  </div>
+                  <p class="team-bio">
+                    {lang === 'fr' ? member.data.bio_fr : member.data.bio_en}
+                  </p>
+                  <div class="team-links">
+                    {member.data.linkedin && (
+                      <a
+                        href={member.data.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        [LinkedIn]
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'join' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.join}</legend>
+        <div class="system-box-content tui-prose">
+          {MarkdownContent && <MarkdownContent />}
+        </div>
+      </fieldset>
+    )
+  }
+
+  {
+    section === 'faq' && (
+      <fieldset class="system-box">
+        <legend class="system-box-title">{sectionTitles.faq}</legend>
+        <div class="system-box-content tui-prose">
+          {MarkdownContent && <MarkdownContent />}
+        </div>
+      </fieldset>
+    )
+  }
+</BaseLayout>

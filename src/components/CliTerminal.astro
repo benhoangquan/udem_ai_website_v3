@@ -1,0 +1,164 @@
+---
+import { ui, type Locale } from '../i18n/ui';
+
+interface Props {
+  lang: Locale;
+  currentPath?: string;
+  langSwitchHref?: string;
+}
+
+const { lang, currentPath = '~', langSwitchHref } = Astro.props;
+const t = ui[lang];
+const switchUrl = langSwitchHref || (lang === 'fr' ? '/' : '/fr');
+---
+
+<footer class="layout-footer">
+  <div class="cli-wrapper">
+    <div id="cli-history" class="cli-history" aria-live="polite"></div>
+    <form id="cli-form" class="cli-container" autocomplete="off">
+      <label for="cli-input" class="cli-prompt">[user@udem-ai {currentPath}]$</label>
+      <input
+        id="cli-input"
+        type="text"
+        class="cli-input"
+        spellcheck="false"
+        placeholder={t.cli.placeholder}
+      />
+    </form>
+  </div>
+</footer>
+
+<script is:inline define:vars={{ lang, cliStrings: t.cli, switchUrl }}>
+  (function () {
+    const form = document.getElementById('cli-form');
+    const input = document.getElementById('cli-input');
+    const historyEl = document.getElementById('cli-history');
+    if (!form || !input || !historyEl) return;
+
+    const cmdHistory = [];
+    let historyIdx = -1;
+    const prefix = lang === 'fr' ? '/fr' : '';
+
+    const sectionMap = {
+      about: 'about',
+      info: 'about',
+      events: 'events',
+      schedule: 'events',
+      activities: 'events',
+      papers: 'papers',
+      resources: 'papers',
+      reading: 'papers',
+      presentations: 'presentations',
+      slides: 'presentations',
+      projects: 'projects',
+      lab: 'projects',
+      teams: 'teams',
+      team: 'teams',
+      members: 'teams',
+      join: 'join',
+      recruit: 'join',
+      faq: 'faq',
+    };
+
+    function appendOutput(cmd, text) {
+      const row = document.createElement('div');
+      row.className = 'cli-history-line';
+      row.innerHTML = `<span class="cli-history-cmd">$ ${cmd}</span> &rarr; <span class="cli-history-out">${text}</span>`;
+      historyEl.appendChild(row);
+      historyEl.scrollTop = historyEl.scrollHeight;
+    }
+
+    function navigateToPage(section, rawCmd) {
+      const targetUrl = `${prefix}/${section}`;
+      appendOutput(rawCmd, `${cliStrings.jumpingTo} ${targetUrl}`);
+      window.location.href = targetUrl;
+    }
+
+    function navigateHome(rawCmd) {
+      const homeUrl = lang === 'fr' ? '/fr' : '/';
+      appendOutput(rawCmd, `${cliStrings.jumpingTo} ${homeUrl}`);
+      window.location.href = homeUrl;
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const raw = input.value.trim();
+      if (!raw) return;
+      cmdHistory.push(raw);
+      historyIdx = cmdHistory.length;
+      input.value = '';
+
+      const parts = raw.toLowerCase().split(/\s+/);
+      const cmd = parts[0];
+      const arg = parts[1];
+
+      if (cmd === 'help' || cmd === '?') {
+        appendOutput(raw, cliStrings.helpOutput);
+      } else if (cmd === 'clear' || cmd === 'cls') {
+        historyEl.innerHTML = '';
+      } else if (cmd === 'ls' || cmd === 'dir') {
+        appendOutput(
+          raw,
+          'about/  events/  papers/  presentations/  projects/  teams/  join/  faq/  posts/'
+        );
+      } else if (cmd === 'top' || cmd === 'home' || cmd === '~' || cmd === 'posts' || cmd === 'blog') {
+        navigateHome(raw);
+      } else if (cmd === 'cd') {
+        if (!arg || arg === '~' || arg === '/' || arg === '..') {
+          navigateHome(raw);
+        } else {
+          const cleanArg = arg.replace(/^[/#~]+/, '').replace(/\/$/, '');
+          if (sectionMap[cleanArg]) {
+            navigateToPage(sectionMap[cleanArg], raw);
+          } else {
+            appendOutput(raw, `cd: ${arg}: No such directory`);
+          }
+        }
+      } else if (cmd === 'cat' && arg) {
+        const cleanArg = arg.replace(/\.md$/, '').replace(/^[/#~]+/, '');
+        if (sectionMap[cleanArg]) {
+          navigateToPage(sectionMap[cleanArg], raw);
+        } else {
+          appendOutput(raw, `cat: ${arg}: No such file or page`);
+        }
+      } else if (cmd === 'lang' || cmd === 'fr' || cmd === 'en') {
+        appendOutput(raw, cliStrings.switchedLang);
+        window.location.href = switchUrl;
+      } else if (cmd === 'discord') {
+        appendOutput(raw, 'Opening Discord (https://discord.gg/2Ttnw8p2Hy)...');
+        window.open('https://discord.gg/2Ttnw8p2Hy', '_blank', 'noopener');
+      } else if (cmd === 'linkedin') {
+        appendOutput(raw, 'Opening LinkedIn (https://www.linkedin.com/company/udem-ai)...');
+        window.open('https://www.linkedin.com/company/udem-ai', '_blank', 'noopener');
+      } else if (cmd === 'instagram' || cmd === 'ig') {
+        appendOutput(raw, 'Opening Instagram (https://instagram.com/udem.ai)...');
+        window.open('https://instagram.com/udem.ai', '_blank', 'noopener');
+      } else if (cmd === 'email' || cmd === 'contact') {
+        appendOutput(raw, 'anas.el-ghoudane@umontreal.ca | hey@udemai.ca');
+        window.location.href = 'mailto:anas.el-ghoudane@umontreal.ca';
+      } else if (sectionMap[cmd]) {
+        navigateToPage(sectionMap[cmd], raw);
+      } else {
+        appendOutput(raw, cliStrings.unknownCmd);
+      }
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowUp') {
+        if (historyIdx > 0) {
+          historyIdx--;
+          input.value = cmdHistory[historyIdx];
+          e.preventDefault();
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (historyIdx < cmdHistory.length - 1) {
+          historyIdx++;
+          input.value = cmdHistory[historyIdx];
+        } else {
+          historyIdx = cmdHistory.length;
+          input.value = '';
+        }
+      }
+    });
+  })();
+</script>

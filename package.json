@@ -1,0 +1,16 @@
+{
+  "name": "udem-ai-website-v3",
+  "type": "module",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.1.0"
+  }
+}
