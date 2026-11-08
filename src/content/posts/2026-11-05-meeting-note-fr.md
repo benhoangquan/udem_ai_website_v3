@@ -1,4 +1,13 @@
-# De la modération fragile aux World Models : ce qui se trame vraiment en AI Safety
+---
+slugId: "2026-11-05-meeting-note"
+lang: "fr"
+title: "De la modération fragile aux World Models : ce qui se trame vraiment en AI Safety"
+author: "Quan Tran"
+date: "2026-11-05"
+venue: "Université de Montréal"
+tags: ["sécurité-ia", "world-models", "open-weights", "ml-engineering", "udem-ai"]
+summary: "Retour sur notre discussion d'équipe : failles de la modération et de l'unlearning en open weights, piste de recherche 'drowning the fish', virage vers les World Models et discernement technique à l'ère du vibe coding."
+---
 
 Lors de notre dernière discussion d’équipe, on a décortiqué un paradoxe qui hante l’écosystème IA : plus nos modèles deviennent autonomes, plus nos méthodes actuelles de modération montrent leurs limites. Entre failles de sécurité dans l’*open weights*, intuitions de recherche et redéfinition du rôle d'ingénieur, tour d’horizon des idées clés qui animent nos travaux.
 
